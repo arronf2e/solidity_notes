@@ -14,11 +14,11 @@ contract DataType {
     // 未初始化的bool类型变量默认值为false
     bool public isOk; 
 
-    // 运算
-    bool public bool1 = !_bool;
-    bool public bool2 = _bool && isOk;
-    bool public bool3 = _bool || isOk;
-    bool public bool4 = _bool == isOk;
-    bool public bool5 = _bool != isOk;
+    // 运算，注意：&& 和 || 运算符遵循短路规则
+    bool public bool1 = !_bool;  // false
+    bool public bool2 = _bool && isOk; // false
+    bool public bool3 = _bool || isOk; // true
+    bool public bool4 = _bool == isOk; // false
+    bool public bool5 = _bool != isOk; // true
 }
 ```
