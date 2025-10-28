@@ -1,3 +1,6 @@
+# 数据类型
+
+```solidity
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.21;
 
@@ -41,3 +44,5 @@ contract DataType {
     Fruit apple = Fruit.Apple;
 
 }
+
+```
