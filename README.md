@@ -47,7 +47,7 @@ contract DataType {
 
 ```
 
-## 方法
+# 函数
 
 ```solidity
 // SPDX-License-Identifier: MIT
@@ -95,6 +95,34 @@ contract Function {
         balance = address(this).balance;
     }
 
+}
+```
+
+# 函数返回值
+
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+contract FunctionReturn {
+    uint256 public number;
+    bool public isOk;
+
+    // 显式返回多个变量
+    function returnMultiple() public pure returns(uint256, bool, uint256[3] memory) {
+        return (1, true, [uint256(1), 2, 5]);
+    }
+
+    // 命名式返回（避免遮蔽状态变量）
+    function returnNamed() public pure returns(uint256 retNumber, bool retBool) {
+        retNumber = 2;
+        retBool = false;
+    }
+
+    // 解构赋值必须在函数内
+    function testDestruction() public {
+        (number, isOk) = returnNamed();
+    }
 }
 ```
 
