@@ -46,3 +46,55 @@ contract DataType {
 }
 
 ```
+
+## 方法
+
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.21;
+
+// function <function name>([parameter types[, ...]]) {internal|external|public|private} [pure|view|payable] [virtual|override] [<modifiers>]
+// [returns (<return types>)]{ <function body> }
+
+
+contract Function {
+
+    uint256 public num = 1;
+
+
+    // 1. pure vs view
+    // 函数既不能读取也不能写入链上的状态变量，
+    function add() external  {
+        num = num + 1;
+    }
+    // 纯函数
+    function pureFun(uint256 number) external pure returns(uint256 newNumber) {
+        newNumber =  number + 1; 
+    }
+
+    // view能查看不能修改
+    function viewFun() external view returns(uint256 newNumber) {
+        newNumber = num + 1;
+    }
+
+    // 2. internal vs external
+    // internal: 内部函数，无法直接调用，一般用来隐藏敏感函数，减少攻击面
+    function minus() internal {
+        num = num - 1;
+    }
+
+    // 合约内的函数可以调用内部函数
+    function minusCall() external {
+        minus();
+    }
+
+    // payable, 递钱，能给合约支付eth的函数
+    function minusPayable() external payable returns(uint256 balance) {
+        minus();    
+        // this 表示当前合约
+        balance = address(this).balance;
+    }
+
+}
+```
+
