@@ -234,3 +234,71 @@ contract Storage {
     }
 }
 ```
+
+# 引用类型
+
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.21;
+
+contract ReferType {
+    // 引用类型
+
+    // 1. 数组 array
+    // 固定长度数组
+    uint8[5] array1;
+    address[100] array2;
+
+    // 不定长数组
+    uint8[] array3;
+    address[] array4;
+    bytes array5;
+
+    // 创建数组的规则
+    // 对于memory修饰的动态数组，可以用new操作符来创建，但是必须声明长度，并且声明后长度不能改变。
+    function test() public pure {
+        uint[] memory array6 = new uint[](5);
+        bytes memory array7 = new bytes(9);
+    }
+
+    // 数组方法, length, push, pop
+    uint256 len = array1.length;
+    function test2() public {
+        array3.push(2);
+        array4.pop();
+    }
+
+    // 结构体 struct
+    struct Student {
+        uint256 id;
+        uint256 score;
+    }
+
+    Student student;
+
+    //  给结构体赋值
+    // 方法1:在函数中创建一个storage的struct引用
+    function initStudent1() external{
+        Student storage _student = student; // 多余引用，浪费 gas
+        _student.id = 11;
+        _student.score = 100;
+    }
+
+    // 方法2:直接引用状态变量的struct，字段少可以这么做
+    function initStudent2() external{
+        student.id = 1;
+        student.score = 80;
+    }
+
+    // 方法3:构造函数式，不推荐，必须按顺序
+    function initStudent3() external {
+        student = Student(3, 90);
+    }
+
+    // 方法4:key value， 强烈推荐
+    function initStudent4() external {
+        student = Student({id: 4, score: 60});
+    }
+
+}
+```
