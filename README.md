@@ -302,3 +302,44 @@ contract ReferType {
 
 }
 ```
+
+# mapping
+
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.21;
+
+contract MappingDemo {
+
+    // 一个实体用 struct，多个实体用 mapping。
+    // 一个学生 struct，一千个学生 mapping。
+
+    // 用 mapping 的场景：
+    // - "用户的余额"
+    // - "ID 对应的订单"
+    // - "地址是否有权限"
+    // - "tokenId 的拥有者"
+    // - "提案编号的内容"
+
+    // mapping，键值对，哈希表
+    mapping(uint => address) public idToAddress; // id映射到地址
+    mapping(address => address) public swapPair; // 币对的映射，地址到地址
+
+    // 规则
+    // 1. key 必须为内置类型，不能使用 struct
+    // 错误示例：
+    // struct Student{
+    //     uint256 id;
+    //     uint256 score; 
+    // }
+    // mapping(Student => uint) public testVar;
+
+    // 2. mapping 的存储位置必须是storage
+    // 3. 如果映射声明为public，那么Solidity会自动给你创建一个getter函数，可以通过Key来查询对应的Value
+
+    // demo
+    function writeMapping(uint _key, address _value) public {
+        idToAddress[_key] = _value;
+    }
+}
+```
