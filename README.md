@@ -504,3 +504,64 @@ contract MyToken {
 # 修饰器（Modifier）
 
 一种代码复用机制，用来在函数执行前后插入自定义的检查或逻辑。常用于权限控制、状态检查、防重入等。
+
+```
+modifier onlyOwner() {
+    require(msg.sender == owner, "Not owner");
+    _;               // 这里会插入被修饰函数的主体代码
+}
+```
+
+- _; 表示 占位符，函数体会在此处被插入。
+- 可以出现 多个 _;，实现“前后”逻辑（如 enter / exit）。
+- 修饰器本身可以接受参数，提升灵活性。
+
+## 1. 常见修饰器示例  
+
+| 场景 | 示例代码 |
+|------|----------|
+| **所有者权限** | `modifier onlyOwner() { require(msg.sender == owner, "Not owner"); _; }` |
+| **暂停合约** | ```bool public paused; modifier whenNotPaused() { require(!paused, "Paused"); _; }``` |
+| **防重入（ReentrancyGuard）** | ```uint256 private _status; modifier nonReentrant() { require(_status == 0, "Reentrant"); _status = 1; _; _status = 0; }``` |
+| **检查输入** | ```modifier validAmount(uint256 amount) { require(amount > 0, "Zero amount"); _; }``` |
+| **时间锁** | ```modifier onlyAfter(uint256 timestamp) { require(block.timestamp >= timestamp, "Too early"); _; }``` |
+| **带参数的修饰器** | ```modifier onlyAfter(uint256 time) { require(block.timestamp >= time, "Too early"); _; }``` |
+
+```
+contract MyToken {
+    address public owner;
+    bool public paused;
+
+    constructor() {
+        owner = msg.sender;
+    }
+
+    // 修饰器声明
+    modifier onlyOwner() {
+        require(msg.sender == owner, "Not owner");
+        _;
+    }
+
+    modifier whenNotPaused() {
+        require(!paused, "Contract paused");
+        _;
+    }
+
+    // 应用修饰器
+    function mint(address to, uint256 amount) external onlyOwner whenNotPaused {
+        // 这里的代码会在两个修饰器检查通过后执行
+        _mint(to, amount);
+    }
+
+    // 触发暂停/恢复
+    function setPaused(bool _paused) external onlyOwner {
+        paused = _paused;
+    }
+}
+```
+
+技巧：
+- 组合修饰器：可以在同一函数上叠加多个修饰器，执行顺序从上到下。
+- 返回值：修饰器本身不能返回值，但可以通过 require 抛出错误信息。
+- 内部函数：如果需要在修饰器内部调用内部函数（如 _beforeTokenTransfer），确保它们是 internal 或 private，且不产生外部调用的副作用。
+- Gas 耗费：每个修饰器都会增加一次 require 检查的 gas 开销，尽量保持简洁。
