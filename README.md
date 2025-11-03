@@ -382,3 +382,125 @@ address constant CONSTANT_ADDRESS = 0x0000000000000000000000000000000000000000;
 ```
 address immutable USER = msg.sender;
 ```
+
+# 控制流
+
+1. if 条件判断
+
+```
+function getDiscount(uint256 amount) external pure returns (uint256) {
+    if (amount >= 1000) {
+        return 20; // 20% 折扣
+    } else if (amount >= 500) {
+        return 10; // 10% 折扣
+    } else {
+        return 0;
+    }
+}
+```
+
+2. for / while / do while 循环
+
+注意：
+- 循环会消耗 gas，尤其是迭代次数较多时容易导致交易失败（out‑of‑gas）。
+- 在公开或 external 函数中，尽量避免 无限循环，并对循环上限做硬限制（如 for (uint i = 0; i < max; i++)）。
+- 对于需要遍历大量数据的场景，推荐使用 离链计算（如 The Graph）或 分批处理（分多笔交易完成）。
+
+```
+function sum(uint256[] calldata numbers) external pure returns (uint256 total) {
+    for (uint256 i = 0; i < numbers.length; i++) {
+        total += numbers[i];
+    }
+}
+```
+
+3.  require、revert、assert  断言与错误处理
+
+| 关键字 | 用途 | 触发时行为 |
+|--------|------|------------|
+| `require(condition, "error message")` | 检查函数前置条件、输入合法性、外部调用返回值等。 | 条件不满足时 **回滚**（revert）并返回错误信息，消耗的 gas 只到错误点。 |
+| `revert("error message")` | 主动回滚，常用于复杂的错误分支或在 `if` 中统一处理。 | 同 `require`，回滚并返回错误信息。 |
+| `assert(condition)` | 检查内部不可能出现的错误（如溢出、不可达代码）。 | 条件不满足时触发 **异常**，消耗全部剩余 gas（在 Solidity 0.8+，溢出会自动触发 `assert`）。 |
+
+```
+function withdraw(uint256 amount) external {
+    uint256 balance = balances[msg.sender];
+    require(balance >= amount, "Insufficient balance");
+    balances[msg.sender] = balance - amount;
+    payable(msg.sender).transfer(amount);
+}
+```
+
+4. try‑catch 外部调用异常捕获
+
+try‑catch 可捕获对外部合约的调用异常（包括 revert、require、assert）。
+
+```
+interface IExternal {
+    function risky(uint256 x) external returns (uint256);
+}
+
+contract Caller {
+    IExternal externalContract;
+
+    constructor(address _addr) {
+        externalContract = IExternal(_addr);
+    }
+
+    function callRisky(uint256 x) external returns (uint256) {
+        try externalContract.risky(x) returns (uint256 result) {
+            return result;
+        } catch Error(string memory reason) {
+            // 捕获 require/revert 带的错误信息
+            revert(reason);
+        } catch (bytes memory lowLevelData) {
+            // 捕获低层错误（assert、out‑of‑gas 等）
+            revert("Low‑level error");
+        }
+    }
+}
+```
+
+# 构造函数
+
+在合约部署时只执行一次的特殊函数，用来初始化合约的状态变量、设置权限、绑定外部合约地址等。
+
+注意：
+- 只能调用一次：部署交易完成后，构造函数不再存在。
+- 没有返回值，也不能标记为 public、external、view 等。
+- 参数：可以接受任意类型的参数，部署时由调用者（如 Remix、Hardhat、Truffle）提供。
+- 可见性：默认 public，但在 0.7 以后必须显式写 constructor 关键字（不再使用合约同名函数）。
+
+流程：编译 → 部署字节码（含构造函数） → 部署交易 → EVM 执行构造函数 → 生成运行时字节码（不含构造函数） → 合约上线
+
+
+当我们在 Remix、Hardhat、Truffle 等工具里 调用 MyToken 的构造函数 时，实际上是向网络发送一笔 **创建合约** 的交易；交易成功后，构造函数的代码已经被“消耗掉”，只留下运行时代码。
+
+```
+contract MyToken {
+    address public owner;
+    uint256 public immutable launchTime;
+
+    // 只会在部署时执行一次
+    constructor(address _owner) {
+        owner = _owner;          // 只能写一次
+        launchTime = block.timestamp;
+    }
+
+    // 之后的所有函数都在运行时字节码里
+    function transfer(address to, uint256 amount) external {
+        // …
+    }
+}
+```
+
+为什么只能调用一次？（安全/设计角度）
+
+- 一次性初始化，合约的所有状态变量、权限、不可变变量（immutable）等必须在部署时确定。若构造函数可以被再次调用，后续调用者可能会重新写入关键变量（如 owner），导致安全漏洞。
+- 不可变变量（immutable），immutable 只能在构造函数里赋值一次，之后不可更改。若构造函数可重复执行，immutable 的语义就失效。
+- 合约地址唯一性，合约地址是由 部署者地址 + nonce 计算得到的，一旦部署完成，地址固定不变。再次执行构造函数相当于想在同一个地址上重新“创建”合约，这在 EVM 中是不可能的。
+- Gas 与资源消耗，构造函数往往会进行一次性的大量写入（如预分配代币、初始化映射），如果可以随意重复调用，会导致无限写入、耗尽 gas，破坏链上状态。
+
+# 修饰器（Modifier）
+
+一种代码复用机制，用来在函数执行前后插入自定义的检查或逻辑。常用于权限控制、状态检查、防重入等。
