@@ -363,6 +363,22 @@ contract MappingDemo {
 
 # 常数
 
+状态变量声明这两个关键字之后，不能在初始化后更改数值。这样做的好处是提升合约的安全性并节省gas
+
+constant：编译时即写死的常量，不占 storage，读取免费，适用于永远不变的数值。
+immutable：部署时可设、之后不可改的变量，占用 1 个 storage 槽，读取有常规成本，适用于需要在构造函数中动态决定但随后保持不变的配置。
+
+在实际开发中，优先使用 constant 来表示完全固定的值；需要在部署时才确定的参数 则使用 immutable。这样既能节约 gas，又能保持灵活性。
+
 1. const
+```
+// constant变量必须在声明的时候初始化，之后不能改变
+uint256 constant CONSTANT_NUM = 10;
+string constant CONSTANT_STRING = "hello world";
+address constant CONSTANT_ADDRESS = 0x0000000000000000000000000000000000000000;
+```
 
 2. immutable
+```
+address immutable USER = msg.sender;
+```
